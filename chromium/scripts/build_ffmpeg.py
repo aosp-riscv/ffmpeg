@@ -181,42 +181,37 @@ def GetAndroidApiLevel():
 
     return (api_match.group(1), api64_match.group(1))
 
-
-# Sets up cross-compilation (regardless of host arch) for compiling Android.
+# Sets up cross-compilation (specific to host being linux-x64_64) for compiling
+# Android.
 # Returns the necessary configure flags as a list.
+# See also https://developer.android.com/ndk/guides/other_build_systems
+# As of M90, //third_party/android_ndk no longer includes mipsel or mips64el
+# toolchains; they were not previously supported by default by this script, and
+# currently are unsupported due to lack of toolchain in checkout.
 def SetupAndroidToolchain(target_arch):
   api_level, api64_level = GetAndroidApiLevel()
 
   # Toolchain prefix misery, for when just one pattern is not enough :/
   toolchain_level = api_level
-  sysroot_arch = target_arch
-  toolchain_dir_prefix = target_arch
   toolchain_bin_prefix = target_arch
+
   if target_arch == 'arm-neon' or target_arch == 'arm':
-    toolchain_bin_prefix = toolchain_dir_prefix = 'arm-linux-androideabi'
-    sysroot_arch = 'arm'
+    toolchain_bin_prefix = 'arm-linux-androideabi'
   elif target_arch == 'arm64':
     toolchain_level = api64_level
-    toolchain_bin_prefix = toolchain_dir_prefix = 'aarch64-linux-android'
+    toolchain_bin_prefix =  'aarch64-linux-android'
   elif target_arch == 'ia32':
-    toolchain_dir_prefix = sysroot_arch = 'x86'
     toolchain_bin_prefix = 'i686-linux-android'
   elif target_arch == 'x64':
     toolchain_level = api64_level
-    toolchain_dir_prefix = sysroot_arch = 'x86_64'
     toolchain_bin_prefix = 'x86_64-linux-android'
-  elif target_arch == 'mipsel':
-    sysroot_arch = 'mips'
-    toolchain_bin_prefix = toolchain_dir_prefix = 'mipsel-linux-android'
-  elif target_arch == 'mips64el':
+  elif target_arch == 'mipsel':  # Unsupported beginning in M90
+    toolchain_bin_prefix = 'mipsel-linux-android'
+  elif target_arch == 'mips64el': # Unsupported beginning in M90
     toolchain_level = api64_level
-    sysroot_arch = 'mips64'
-    toolchain_bin_prefix = toolchain_dir_prefix = 'mips64el-linux-android'
+    toolchain_bin_prefix = 'mips64el-linux-android'
 
-  sysroot = (
-      NDK_ROOT_DIR + '/platforms/android-' + toolchain_level + '/arch-' +
-      sysroot_arch)
-  gcc_toolchain = NDK_ROOT_DIR + '/toolchains/llvm/prebuilt/linux-x86_64/'
+  clang_toolchain_dir = NDK_ROOT_DIR + '/toolchains/llvm/prebuilt/linux-x86_64/'
 
   # Big old nasty hack here, beware! The new android ndk has some foolery with
   # libgcc.a -- clang still uses gcc for its linker when cross compiling.
@@ -237,19 +232,20 @@ def SetupAndroidToolchain(target_arch):
     fakedir=fakedir))
 
   return [
+      '--enable-pic',
+      '--cc=' + clang_toolchain_dir + 'bin/clang',
+      '--cxx=' + clang_toolchain_dir + 'bin/clang++',
+      '--ld=' + clang_toolchain_dir + 'bin/clang',
       '--enable-cross-compile',
-      '--sysroot=' + sysroot,
-
-      # Android sysroot includes are now split out; try to cobble together the
-      # correct tree.
-      '--extra-cflags=-I' + gcc_toolchain + 'sysroot/usr/include',
-      '--extra-cflags=-I' + gcc_toolchain + 'sysroot/usr/include/' +
+      '--sysroot=' + clang_toolchain_dir + 'sysroot',
+      '--extra-cflags=-I' + clang_toolchain_dir + 'sysroot/usr/include',
+      '--extra-cflags=-I' + clang_toolchain_dir + 'sysroot/usr/include/' +
       toolchain_bin_prefix,
-      '--extra-cflags=--target=' + toolchain_bin_prefix,
-      '--extra-ldflags=--target=' + toolchain_bin_prefix,
+      '--extra-cflags=--target=' + toolchain_bin_prefix + toolchain_level,
+      '--extra-ldflags=--target=' + toolchain_bin_prefix + toolchain_level,
       '--extra-ldflags=-L{}'.format(fakedir),
-      '--extra-ldflags=-L' + gcc_toolchain + toolchain_bin_prefix + '/',
-      '--extra-ldflags=--gcc-toolchain=' + gcc_toolchain,
+      '--extra-ldflags=-L' + clang_toolchain_dir + toolchain_bin_prefix,
+      '--extra-ldflags=--gcc-toolchain=' + clang_toolchain_dir,
       '--target-os=android',
   ]
 
@@ -835,7 +831,7 @@ def ConfigureAndBuild(target_arch, target_os, host_os, host_arch, parallel_jobs,
         '--disable-inline-asm',
     ])
 
-  if 'win' not in target_os:
+  if 'win' not in target_os and 'android' not in target_os:
     configure_flags['Common'].extend([
         '--enable-pic',
         '--cc=clang',
