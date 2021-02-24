@@ -6,6 +6,7 @@
 
 from __future__ import print_function
 
+import atexit
 import collections
 import functools
 import glob
@@ -13,10 +14,12 @@ import optparse
 import os
 import platform
 import re
+import shlex
 import shutil
 import signal
 import subprocess
 import sys
+import tempfile
 
 SCRIPTS_DIR = os.path.abspath(os.path.dirname(__file__))
 FFMPEG_DIR = os.path.abspath(os.path.join(SCRIPTS_DIR, '..', '..'))
@@ -110,7 +113,6 @@ Resulting binaries will be placed in:
   build.TARGET_ARCH.TARGET_OS/ChromeOS/out/
   build.TARGET_ARCH.TARGET_OS/Chromium/out/
   """
-
 
 def PrintAndCheckCall(argv, *args, **kwargs):
   print('Running %s' % '\n '.join(argv))
@@ -298,14 +300,45 @@ def SetupWindowsCrossCompileToolchain(target_arch):
 
   flags = gn_helpers.FromGNArgs(output)
   cwd = os.getcwd()
-  for cflag in flags['include_flags_imsvc'].split(' '):
+
+  # FFmpeg configure doesn't like arguments with spaces in them even if quoted
+  # or double-quoted or escape-quoted (whole argument and/or the internal
+  # spaces). Attempts to use environment variables like INCLUDE, LIB, CFLAGS
+  # instead failed. To automate this for now, every path that has a space in it
+  # is replaced with a symbolic link created in the OS' temp folder to the real
+  # path.
+  def do_remove_temp_link(temp_name):
+    assert os.path.exists(temp_name)
+    assert os.path.islink(temp_name)
+    print('Removing temporary link ' + temp_name)
+    os.remove(temp_name)
+
+  def do_make_temp_link(real_target):
+    temp_file = tempfile.NamedTemporaryFile(prefix='windows_build_ffmpeg')
+    temp_name = temp_file.name
+    # Destroy |temp_file|, but reuse its name for the symbolic link which
+    # survives this helper method.
+    temp_file.close()
+    os.symlink(real_target, temp_name)
+    assert os.path.exists(temp_name)
+    assert os.path.islink(temp_name)
+    atexit.register(do_remove_temp_link, temp_name)
+    return temp_name
+
+  # Each path is of the form:
+  # "/I../depot_tools/win_toolchain/vs_files/20d5f2553f/Windows # Kits/10/Include/10.0.19041.0/winrt"
+  #
+  # Since there's a space in some of the include paths, the path may be quoted
+  # in |flags|. We use shlex to split on spaces while preserving the quoted
+  # strings.
+  for include_path in shlex.split(flags['include_flags_I']):
     # Apparently setup_toolchain prefers relative include paths, which
     # may work for chrome, but it does not work for ffmpeg, so let's make
     # them asbolute again.
-    cflag = cflag.strip('"')
-    if cflag.startswith("-imsvc"):
-      cflag = "-imsvc" + os.path.join(cwd, cflag[6:])
-    new_args += ['--extra-cflags=' + cflag]
+    include_path = os.path.abspath(os.path.join(cwd, include_path[2:]))
+    if ' ' in include_path:
+      include_path = do_make_temp_link(include_path)
+    new_args += [ '--extra-cflags=-I' + include_path ]
 
   # TODO(dalecurtis): Why isn't the ucrt path printed?
   flags['vc_lib_ucrt_path'] = flags['vc_lib_um_path'].replace('/um/', '/ucrt/')
@@ -314,7 +347,11 @@ def SetupWindowsCrossCompileToolchain(target_arch):
   for k in flags:
     # libpath_flags is like cflags. Since it is also redundant, skip it.
     if 'lib' in k and k != 'libpath_flags':
-      new_args += ['--extra-ldflags=-libpath:' + flags[k]]
+      lib_path = flags[k]
+      if ' ' in lib_path:
+        lib_path = do_make_temp_link(lib_path)
+      new_args += [ '--extra-ldflags=-libpath:' + lib_path ]
+
   return new_args
 
 def SetupMacCrossCompileToolchain(target_arch):
