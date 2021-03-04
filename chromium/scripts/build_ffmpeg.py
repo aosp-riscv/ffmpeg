@@ -251,7 +251,6 @@ def SetupAndroidToolchain(target_arch):
       '--target-os=android',
   ]
 
-
 def SetupWindowsCrossCompileToolchain(target_arch):
   # First retrieve various MSVC and Windows SDK paths.
   output = subprocess.check_output([
@@ -282,15 +281,14 @@ def SetupWindowsCrossCompileToolchain(target_arch):
         '--as=clang-cl',
         # FFMPEG is not yet enlightened for ARM64 Windows.
         # Imitate Android workaround.
-        '--extra-cflags=--target=arm64-windows',
-        '--extra-ldflags=--target=arm64-windows',
+        '--extra-cflags=--target=arm64-windows'
     ]
 
   # Turn this into a dictionary.
   win_dirs = gn_helpers.FromGNArgs(output)
 
-  # Use those paths with a second script which will tell us the proper include
-  # and lib paths to specify for cflags and ldflags respectively.
+  # Use those paths with a second script which will tell us the proper lib paths
+  # to specify for ldflags.
   output = subprocess.check_output([
       'python',
       os.path.join(CHROMIUM_ROOT_DIR, 'build', 'toolchain', 'win',
@@ -299,13 +297,23 @@ def SetupWindowsCrossCompileToolchain(target_arch):
   ])
 
   flags = gn_helpers.FromGNArgs(output)
-  cwd = os.getcwd()
+
+  # Q1 2021 update to LLVM now lets us use a sysroot for cross-compilation
+  # targeting Windows, instead of specificying a variety of individual include
+  # folders which now include whitespace within paths within the SDK. Either
+  # injection of such paths into environment variable or using the new sysroot
+  # option is required, since using a /tmp symlink solution to avoid the spaces
+  # broke cross-compilation for win-arm64. For at least now, we'll use the
+  # sysroot approach, until and unless the environment variable injection
+  # approach is determined to be better or more consistent.
+  new_args += [
+      '--extra-cflags=/winsysroot' + win_dirs['vs_path'],
+  ]
 
   # FFmpeg configure doesn't like arguments with spaces in them even if quoted
   # or double-quoted or escape-quoted (whole argument and/or the internal
-  # spaces). Attempts to use environment variables like INCLUDE, LIB, CFLAGS
-  # instead failed. To automate this for now, every path that has a space in it
-  # is replaced with a symbolic link created in the OS' temp folder to the real
+  # spaces). To automate this for now, every path that has a space in it is
+  # replaced with a symbolic link created in the OS' temp folder to the real
   # path.
   def do_remove_temp_link(temp_name):
     assert os.path.exists(temp_name)
@@ -325,30 +333,23 @@ def SetupWindowsCrossCompileToolchain(target_arch):
     atexit.register(do_remove_temp_link, temp_name)
     return temp_name
 
-  # Each path is of the form:
-  # "/I../depot_tools/win_toolchain/vs_files/20d5f2553f/Windows # Kits/10/Include/10.0.19041.0/winrt"
-  #
-  # Since there's a space in some of the include paths, the path may be quoted
-  # in |flags|. We use shlex to split on spaces while preserving the quoted
-  # strings.
-  for include_path in shlex.split(flags['include_flags_I']):
-    # Apparently setup_toolchain prefers relative include paths, which
-    # may work for chrome, but it does not work for ffmpeg, so let's make
-    # them asbolute again.
-    include_path = os.path.abspath(os.path.join(cwd, include_path[2:]))
-    if ' ' in include_path:
-      include_path = do_make_temp_link(include_path)
-    new_args += [ '--extra-cflags=-I' + include_path ]
+  # Even with the /winsysroot option, the libpaths still require explicit
+  # configuration (for now at least); /winsysroot is not recognized as a valid
+  # extra-ldflags option by lld-link.
 
   # TODO(dalecurtis): Why isn't the ucrt path printed?
   flags['vc_lib_ucrt_path'] = flags['vc_lib_um_path'].replace('/um/', '/ucrt/')
 
-  # Unlike the cflags, the lib include paths are each in a separate variable.
+  # The lib include paths are each in a separate key.
   for k in flags:
     # libpath_flags is like cflags. Since it is also redundant, skip it.
     if 'lib' in k and k != 'libpath_flags':
       lib_path = flags[k]
       if ' ' in lib_path:
+        # Use a temporary symbolic link instead of the real path if there is a
+        # space in the real path. Arguably, injection of these into environment
+        # variables may be better, especially if /winsysroot continues to not
+        # provide appropriate lib paths.
         lib_path = do_make_temp_link(lib_path)
       new_args += [ '--extra-ldflags=-libpath:' + lib_path ]
 
