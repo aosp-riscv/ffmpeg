@@ -407,19 +407,14 @@ def SetupWindowsCrossCompileToolchain(target_arch):
 def SetupMacCrossCompileToolchain(target_arch):
   # First compute the various SDK paths.
   mac_min_ver = '10.10'
+  developer_dir =  os.path.join(CHROMIUM_ROOT_DIR, 'build', 'mac_files',
+          'xcode_binaries', 'Contents', 'Developer')
+  sdk_dir = os.path.join(developer_dir, 'Platforms', 'MacOSX.platform',
+          'Developer', 'SDKs', 'MacOSX.sdk')
+
   if target_arch == 'x64':
-    developer_dir =  os.path.join(CHROMIUM_ROOT_DIR, 'build', 'mac_files',
-            'xcode_binaries', 'Contents', 'Developer')
-    sdk_dir = os.path.join(developer_dir, 'Platforms', 'MacOSX.platform',
-            'Developer', 'SDKs', 'MacOSX.sdk')
     target_triple = 'x86_64-apple-macosx'
   elif target_arch == 'arm64':
-    # TODO: Once the 11.0 SDK is out of beta, it should be used for both
-    # arm64 and intel builds.
-    developer_dir =  os.path.join(CHROMIUM_ROOT_DIR, 'build', 'mac_files',
-            'xcode_binaries', 'Contents', 'Developer')
-    sdk_dir = os.path.join(developer_dir, 'Platforms', 'MacOSX.platform',
-            'Developer', 'SDKs', 'MacOSX11.0.sdk')
     target_triple = 'arm64-apple-macosx'
   else:
     raise Exception("unknown arch " + target_arch)
