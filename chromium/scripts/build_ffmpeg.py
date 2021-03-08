@@ -114,6 +114,7 @@ Resulting binaries will be placed in:
   build.TARGET_ARCH.TARGET_OS/Chromium/out/
   """
 
+
 def PrintAndCheckCall(argv, *args, **kwargs):
   print('Running %s' % '\n '.join(argv))
   subprocess.check_call(argv, *args, **kwargs)
@@ -167,21 +168,65 @@ def RewriteFile(path, search_replace):
     f.write(contents)
 
 
-# Extracts the Android api level from the Android config.gni.
-# Returns (api level, api 64 level).
-def GetAndroidApiLevel():
-  android_config_gni = os.path.join(CHROMIUM_ROOT_DIR, 'build', 'config',
-                                    'android', 'config.gni')
-  with open(android_config_gni, 'r') as f:
-    gni_contents = f.read()
-    api64_match = re.search('android64_ndk_api_level\s*=\s*(\d{2})',
-                            gni_contents)
-    api_match = re.search('android32_ndk_api_level\s*=\s*(\d{2})', gni_contents)
-    if not api_match or not api64_match:
-      raise Exception('Failed to find the android api level or toolchain '
-                      'version in ' + android_config_gni)
+# Class for determining the 32-bit and 64-bit Android API levels that Chromium
+# uses. Since @functools.cache is not available for easy memoization of the
+# determination result, we use a lazy singleton instance constructed by calling
+# Get().
+class AndroidApiLevels:
+  __instance = None
 
-    return (api_match.group(1), api64_match.group(1))
+  # Extracts the Android API levels from the Chromium Android GN config.
+  # Before Q1 2021, these were grep'able from build/config/android/config.gni.
+  # With conditional logic introduced in that gni file, we seek to avoid fragility
+  # going forwards, at the cost of creating a full temporary GN Chromium Android
+  # build configuration just to extract the API levels here. Caches the results
+  # in api32 and api64 instance variables.
+  def Setup(self):
+    print('Creating a temporary GN config to retrieve Android API levels:')
+
+    # Make a temporary GN build output folder
+    # No tempfile.TemporaryDirectory until python 3.2, so instead:
+    tmp_dir = tempfile.mkdtemp(prefix = 'android_build_ffmpeg_for_api_level_config')
+    print('Created temporary directory ' + tmp_dir)
+
+    # Populate that GN build output folder with generated config for Android as
+    # target OS.
+    with open(os.path.join(tmp_dir, 'args.gn'), 'w') as args_gn_file:
+      args_gn_file.write('target_os = "android"\n')
+      print('Created ' + os.path.realpath(args_gn_file.name))
+
+    # Ask GN to generate build files.
+    PrintAndCheckCall(['gn', 'gen', tmp_dir], cwd=CHROMIUM_ROOT_DIR)
+
+    # Query the API levels in the generated build config.
+    print('Retrieving config vars')
+    config_output = subprocess.check_output([
+        'gn', 'args', tmp_dir, '--short', '--list'], cwd=CHROMIUM_ROOT_DIR)
+
+    # Remove the temporary GN build output folder
+    print('removing temp dir ' + tmp_dir)
+    shutil.rmtree(tmp_dir, ignore_errors=False)
+
+    api64_match = re.search(r'android64_ndk_api_level\s*=\s*(\d{2})',
+                            config_output)
+    api32_match = re.search(r'android32_ndk_api_level\s*=\s*(\d{2})',
+                            config_output)
+    if not api32_match or not api64_match:
+      raise Exception('Failed to find the android api levels')
+
+    self.api32 = api32_match.group(1)
+    self.api64 = api64_match.group(1)
+
+  def ApiLevels(self):
+    return (self.api32, self.api64)
+
+  @classmethod
+  def Get(cls):
+    if cls.__instance is None:
+      cls.__instance = AndroidApiLevels()
+      cls.__instance.Setup()
+    return cls.__instance.ApiLevels()
+
 
 # Sets up cross-compilation (specific to host being linux-x64_64) for compiling
 # Android.
@@ -191,7 +236,9 @@ def GetAndroidApiLevel():
 # toolchains; they were not previously supported by default by this script, and
 # currently are unsupported due to lack of toolchain in checkout.
 def SetupAndroidToolchain(target_arch):
-  api_level, api64_level = GetAndroidApiLevel()
+  api_level, api64_level = AndroidApiLevels.Get()
+  print('Determined Android API levels: 32bit=' + api_level +
+        ', 64bit=' + api64_level)
 
   # Toolchain prefix misery, for when just one pattern is not enough :/
   toolchain_level = api_level
@@ -250,6 +297,7 @@ def SetupAndroidToolchain(target_arch):
       '--extra-ldflags=--gcc-toolchain=' + clang_toolchain_dir,
       '--target-os=android',
   ]
+
 
 def SetupWindowsCrossCompileToolchain(target_arch):
   # First retrieve various MSVC and Windows SDK paths.
@@ -354,6 +402,7 @@ def SetupWindowsCrossCompileToolchain(target_arch):
       new_args += [ '--extra-ldflags=-libpath:' + lib_path ]
 
   return new_args
+
 
 def SetupMacCrossCompileToolchain(target_arch):
   # First compute the various SDK paths.
@@ -610,6 +659,7 @@ def main(argv):
           parallel_jobs,
           configure_args,
           options=options)
+
 
 def ConfigureAndBuild(target_arch, target_os, host_os, host_arch, parallel_jobs,
                       configure_args, options):
