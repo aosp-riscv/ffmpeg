@@ -459,7 +459,11 @@ def SetupMacCrossCompileToolchain(target_arch):
       '--extra-ldflags=' + '-L' + libs_dir,
       '--extra-ldflags=-lSystem',
       '--extra-ldflags=-macosx_version_min', '--extra-ldflags=' + mac_min_ver,
-      '--extra-ldflags=-sdk_version', '--extra-ldflags=' + mac_min_ver]
+      '--extra-ldflags=-sdk_version', '--extra-ldflags=' + mac_min_ver,
+      # ld64.lld requires -platform_version <platform> <min_version>
+      # <sdk_version>
+      '--extra-ldflags=-platform_version', '--extra-ldflags=macos',
+      '--extra-ldflags=' + mac_min_ver, '--extra-ldflags=' + mac_min_ver]
 
   return new_args
 
@@ -953,7 +957,7 @@ def ConfigureAndBuild(target_arch, target_os, host_os, host_arch, parallel_jobs,
       configure_flags['Common'].extend([
           '--arch=x86_64',
           '--extra-cflags=-m64',
-          '--extra-ldflags=-m64',
+          '--extra-ldflags=-arch x86_64',
       ])
     elif target_arch == 'arm64':
       configure_flags['Common'].extend([

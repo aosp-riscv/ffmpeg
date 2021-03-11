@@ -5388,7 +5388,12 @@ case $target_os in
         SHFLAGS='-dynamiclib -Wl,-single_module -Wl,-install_name,$(INSTALL_NAME_DIR)/$(SLIBNAME_WITH_MAJOR),-current_version,$(LIBVERSION),-compatibility_version,$(LIBMAJOR)'
         enabled x86_32 && append SHFLAGS -Wl,-read_only_relocs,suppress
         strip="${strip} -x"
-        add_ldflags -Wl,-dynamic,-search_paths_first
+
+        # TODO(wolenetz): ld64.lld no longer recognizes the following flags and
+        # produces error causing configure to misdetect things like whether
+        # stdlib defines getenv.
+        # add_ldflags -Wl,-dynamic,-search_paths_first
+
         check_cflags -Werror=partial-availability
         SLIBSUF=".dylib"
         SLIBNAME_WITH_VERSION='$(SLIBPREF)$(FULLNAME).$(LIBVERSION)$(SLIBSUF)'
