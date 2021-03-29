@@ -468,7 +468,11 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
 
             nal = &pkt->nals[pkt->nb_nals];
             nal->skipped_bytes_pos_size = FFMIN(1024, extract_length/3+1); // initial buffer size
+#if 0  // Chromium: Always use av_realloc() for |nal->skipped_bytes_pos|. https://crbug.com/1193797
             nal->skipped_bytes_pos = av_malloc_array(nal->skipped_bytes_pos_size, sizeof(*nal->skipped_bytes_pos));
+#else
+            nal->skipped_bytes_pos = av_realloc_array(NULL, nal->skipped_bytes_pos_size, sizeof(*nal->skipped_bytes_pos));
+#endif
             if (!nal->skipped_bytes_pos)
                 return AVERROR(ENOMEM);
 
