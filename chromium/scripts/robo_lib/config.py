@@ -1,30 +1,19 @@
-#!/usr/bin/python
-#
-# Copyright 2018 The Chromium Authors. All rights reserved.
-# Use of this source code is governed by a BSD-style license that can be
-# found in the LICENSE file.
-#
-# Various utility fns for robosushi.
+""" Contains the global configuration object.
+"""
 
 import os
-from subprocess import call
-import subprocess
+from . import shell
+from . import packages
 
-def log(msg):
-  print "[ %s ]" % msg
-
-class UserInstructions(Exception):
-  """Handy exception subclass that just prints very verbose instructions to the
-  user.  Normal exceptions tend to lose the message in the stack trace, which we
-  probably don't care about."""
-  def __init__ (self, msg):
-    self._msg = msg
-
-  def __str__(self):
-    sep = "=" * 78
-    return "\n\n%s\n%s\n%s\n\n" % (sep, self._msg, sep)
 
 class RoboConfiguration:
+  __slots__ = ('_sushi_branch_prefix', '_gn_commit_title',
+    '_patches_commit_title', '_readme_chromium_commit_title',
+    '_origin_merge_base', '_llvm_path', '_autorename_git_file',
+    '_chrome_src', '_host_operating_system', '_host_architecture',
+    '_ffmpeg_home', '_relative_asan_directory', '_branch_name',
+    '_sushi_branch_name', '_readme_chromium_commit_title', '_nasm_path',
+    '_prompt_on_call', '_os_flavor')
   def __init__(self):
     """Ensure that our config has basic fields fill in, and passes some sanity
     checks too.
@@ -53,22 +42,18 @@ class RoboConfiguration:
             "llvm-build", "Release+Asserts", "bin")
 
     self.EnsurePathContainsLLVM()
-    log("Using chrome src: %s" % self.chrome_src())
+    shell.log("Using chrome src: %s" % self.chrome_src())
     self.EnsureFFmpegHome()
-    log("Using ffmpeg home: %s" % self.ffmpeg_home())
+    shell.log("Using ffmpeg home: %s" % self.ffmpeg_home())
     self.EnsureASANConfig()
     self.ComputeBranchName()
-    log("On branch: %s" % self.branch_name())
+    shell.log("On branch: %s" % self.branch_name())
     if self.sushi_branch_name():
-      log("On sushi branch: %s" % self.sushi_branch_name())
+      shell.log("On sushi branch: %s" % self.sushi_branch_name())
 
     # Filename that we'll ask generate_gn.py to write git commands to.
     self._autorename_git_file = os.path.join(
-                                  self.ffmpeg_home(),
-                                  "chromium",
-                                  "scripts",
-                                  ".git_commands.sh")
-
+      self.ffmpeg_home(), "chromium", "scripts", ".git_commands.sh")
 
   def chrome_src(self):
     """Return /path/to/chromium/src"""
@@ -130,11 +115,23 @@ class RoboConfiguration:
   def override_origin_merge_base(self, new_base):
     self._origin_merge_base = new_base
 
+  def os_flavor(self):
+    return self._os_flavor
+
   def EnsureHostInfo(self):
     """Ensure that the host architecture and platform are set."""
-    # TODO(liberato): autodetect
+    kernel, host, os, *rest = shell.output_or_error(["uname", "-a"]).split()
+    assert kernel in ("Linux", "linux")
+    assert "x86_64" in rest
     self._host_operating_system = "linux"
     self._host_architecture = "x64"
+
+    if "rodete" in os:
+      self._os_flavor = packages.OsFlavor.Debian
+    elif "arch" in os:
+      self._os_flavor = packages.OsFlavor.Arch
+    else:
+      raise Exception("Couldn't determine OS flavor (needed to install packages)")
 
   def EnsureChromeSrc(self):
     """Find the /absolute/path/to/my_chrome_dir/src"""
@@ -177,9 +174,9 @@ class RoboConfiguration:
   def ComputeBranchName(self):
     """Get the current branch name and set it."""
     self.chdir_to_ffmpeg_home()
-    branch_name = subprocess.Popen(["git", "rev-parse", "--abbrev-ref", "HEAD"],
-          stdout=subprocess.PIPE).communicate()[0].strip()
-    self.SetBranchName(branch_name)
+    branch_name = shell.output_or_error(
+      ["git", "rev-parse", "--abbrev-ref", "HEAD"])
+    self.SetBranchName(str(branch_name))
 
   def SetBranchName(self, name):
     """Set our branch name, which may be a sushi branch or not."""
@@ -200,11 +197,10 @@ class RoboConfiguration:
   def set_prompt_on_call(self, value):
     self._prompt_on_call = value
 
-  def Call(self, args, shell=False):
+  def Call(self, args, **kwargs):
     """Run the command specified by |args| (see subprocess.call), optionally
     prompting the user."""
     if self.prompt_on_call():
-      print("[%s] About to run: %s " % (os.getcwd(), args))
-      raw_input("Press ENTER to continue, or interrupt the script: ")
-    return call(args, shell=shell)
-
+      print(f"[{os.getcwd()}] About to run: `{' '.join(args)}` ")
+      input("Press ENTER to continue, or interrupt the script: ")
+    return shell.check_run(args, **kwargs)
