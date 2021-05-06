@@ -43,7 +43,7 @@ def output_or_error(command, error_gen=None, **kwargs):
   if result.returncode:
     if error_gen is not None:
       raise error_gen(result)
-    raise RuntimeError(f'`{" ".join(command)}` ({result.returncode})\n\t{result.stderr}')
+    raise RuntimeError(f'`{" ".join(command)}` ({result.returncode})\n\t{result.stderr}\n\t{result.stdout}')
 
   if kwargs.get('stdout', subprocess.PIPE) == subprocess.PIPE:
     return result.stdout.strip()
@@ -55,3 +55,7 @@ def check_run(command, error_gen=None, **kwargs):
   '''
   output_or_error(command, error_gen, **kwargs)
   return None
+
+
+def stdout_fail_ok(command, **kwargs):
+  return run(command, **kwargs).stdout.strip()

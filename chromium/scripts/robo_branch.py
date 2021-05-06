@@ -51,11 +51,7 @@ def CreateAndCheckoutDatedSushiBranch(cfg):
   #
   # We don't want to push anything to origin yet, though, just to keep from
   # making a bunch of sushi branches.  We can do it later just as easily.
-  if cfg.Call(["git",
-                             "branch",
-                             "--no-track",
-                             branch_name,
-                             cfg.origin_merge_base()]):
+  if cfg.Call(["git", "branch", "--no-track", branch_name, cfg.origin_merge_base()]):
     raise Exception("Could not create branch")
 
   # NOTE: we could push the remote branch back to origin and start tracking it
@@ -115,8 +111,8 @@ def FindUpstreamMergeParent(cfg):
   sha1s = GetMergeParentsIfAny(cfg)
   for sha1 in sha1s:
     # 'not' is correct -- it returns zero if it is an ancestor => upstream.
-    if not cfg.Call(["git", "merge-base", "--is-ancestor", sha1,
-                     "upstream/master"]):
+    cmd = ["git", "merge-base", "--is-ancestor", sha1, "upstream/master"]
+    if not shell.stdout_fail_ok(cmd):
       return sha1
   raise Exception("No upstream merge parent found.  Is the merge committed?")
 
