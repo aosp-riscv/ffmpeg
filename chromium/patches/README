@@ -986,3 +986,12 @@ Date:   Mon May 10 19:17:07 2021 -0700
 Affects:
     libavformat/mov.c
 
+------------------------------------------------------------------
+commit aa56606640e56158e412b55eb1bde1b9af5f5770
+Author: Ted Meyer <tmathmeyer@google.com>
+Date:   Fri Jun 4 12:10:16 2021 -0700
+
+    Initialize variables to fix compilation warning
+
+Affects:
+    libavutil/x86/tx_float_init.c

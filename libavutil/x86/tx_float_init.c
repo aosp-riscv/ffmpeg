@@ -37,7 +37,7 @@ void ff_split_radix_fft_float_avx2(AVTXContext *s, void *out, void *in, ptrdiff_
 av_cold void ff_tx_init_float_x86(AVTXContext *s, av_tx_fn *tx)
 {
     int cpu_flags = av_get_cpu_flags();
-    int gen_revtab = 0, basis, revtab_interleave;
+    int gen_revtab = 0, basis = 0, revtab_interleave = 0;
 
     if (s->flags & AV_TX_UNALIGNED)
         return;
