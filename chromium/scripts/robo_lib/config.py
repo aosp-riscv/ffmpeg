@@ -4,7 +4,7 @@
 import os
 from . import shell
 from . import packages
-
+from . import errors
 
 class RoboConfiguration:
   __slots__ = ('_sushi_branch_prefix', '_gn_commit_title',
@@ -181,7 +181,7 @@ class RoboConfiguration:
     llvm_path = os.path.join(self.chrome_src(), "third_party",
             "llvm-build", "Release+Asserts", "bin")
     if self.llvm_path() not in os.environ["PATH"]:
-      raise UserInstructions(
+      raise errors.UserInstructions(
                           "Please add:\n%s\nto the beginning of $PATH" %
                           self.llvm_path())
   def llvm_path(self):
