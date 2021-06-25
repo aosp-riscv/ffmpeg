@@ -170,7 +170,7 @@ config("ffmpeg_warnings") {
       "-Wno-tautological-constant-out-of-range-compare",
 
       # Various files convert MAX_INT to double and similar without casting.
-      "-Wno-implicit-int-float-conversions",
+      "-Wno-implicit-int-float-conversion",
     ]
 
     if (target_cpu == "arm" || target_cpu == "arm64") {
