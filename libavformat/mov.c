@@ -4687,6 +4687,8 @@ static int mov_read_chap(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     for (i = 0; i < num && !pb->eof_reached; i++)
         c->chapter_tracks[i] = avio_rb32(pb);
 
+    c->nb_chapter_tracks = i;
+
     return 0;
 }
 
@@ -4832,7 +4834,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             dts = frag_stream_info->first_tfra_pts;
             av_log(c->fc, AV_LOG_DEBUG, "found mfra time %"PRId64
                     ", using it for dts\n", pts);
-        } else if (frag_stream_info->sidx_pts != AV_NOPTS_VALUE) {
+        } else if (frag_stream_info->sidx_pts != AV_NOPTS_VALUE && !c->use_tfdt) {
             // FIXME: sidx earliest_presentation_time is *PTS*, s.b.
             // pts = frag_stream_info->sidx_pts;
             dts = frag_stream_info->sidx_pts - sc->time_offset;
@@ -5429,7 +5431,7 @@ static int mov_read_mdcv(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     sc = c->fc->streams[c->fc->nb_streams - 1]->priv_data;
 
-    if (atom.size < 24) {
+    if (atom.size < 24 || sc->mastering) {
         av_log(c->fc, AV_LOG_ERROR, "Invalid Mastering Display Color Volume box\n");
         return AVERROR_INVALIDDATA;
     }
@@ -5476,6 +5478,11 @@ static int mov_read_coll(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return 0;
     }
     avio_skip(pb, 3); /* flags */
+
+    if (sc->coll){
+        av_log(c->fc, AV_LOG_WARNING, "Ignoring duplicate COLL\n");
+        return 0;
+    }
 
     sc->coll = av_content_light_metadata_alloc(&sc->coll_size);
     if (!sc->coll)
@@ -8199,6 +8206,8 @@ static const AVOption mov_options[] = {
         FLAGS, "use_mfra_for" },
     {"pts", "pts", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_MFRA_PTS}, 0, 0,
         FLAGS, "use_mfra_for" },
+    {"use_tfdt", "use tfdt for fragment timestamps", OFFSET(use_tfdt), AV_OPT_TYPE_BOOL, {.i64 = 0},
+        0, 1, FLAGS},
     { "export_all", "Export unrecognized metadata entries", OFFSET(export_all),
         AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, .flags = FLAGS },
     { "export_xmp", "Export full XMP metadata", OFFSET(export_xmp),

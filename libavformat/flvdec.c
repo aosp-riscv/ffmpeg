@@ -28,6 +28,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/dict.h"
 #include "libavutil/opt.h"
+#include "libavutil/internal.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/time_internal.h"
@@ -681,15 +682,14 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
             av_dict_set(&s->metadata, key, str_val, 0);
         } else if (amf_type == AMF_DATA_TYPE_STRING) {
             av_dict_set(&s->metadata, key, str_val, 0);
-        } else if (amf_type == AMF_DATA_TYPE_DATE) {
-            time_t time;
-            struct tm t;
-            char datestr[128];
-            time =  date.milliseconds / 1000; // to seconds
-            localtime_r(&time, &t);
-            strftime(datestr, sizeof(datestr), "%a, %d %b %Y %H:%M:%S %z", &t);
-
-            av_dict_set(&s->metadata, key, datestr, 0);
+        } else if (   amf_type == AMF_DATA_TYPE_DATE
+                   && isfinite(date.milliseconds)
+                   && date.milliseconds > INT64_MIN/1000
+                   && date.milliseconds < INT64_MAX/1000
+                  ) {
+            // timezone is ignored, since there is no easy way to offset the UTC
+            // timestamp into the specified timezone
+            avpriv_dict_set_timestamp(&s->metadata, key, 1000 * (int64_t)date.milliseconds);
         }
     }
 

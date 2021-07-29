@@ -28,8 +28,8 @@
 #include "dnn_backend_native_layer_conv2d.h"
 #include "dnn_backend_native_layer_depth2space.h"
 #include "libavformat/avio.h"
-#include "libavformat/internal.h"
 #include "libavutil/avassert.h"
+#include "libavutil/avstring.h"
 #include "../internal.h"
 #include "dnn_backend_native_layer_pad.h"
 #include "dnn_backend_native_layer_maximum.h"
@@ -143,6 +143,7 @@ static DNNReturnType get_input_tf(void *model, DNNData *input, const char *input
 
     tf_output.index = 0;
     input->dt = TF_OperationOutputType(tf_output);
+    input->order = DCO_RGB;
 
     status = TF_NewStatus();
     TF_GraphGetTensorShape(tf_model->graph, tf_output, dims, 4, status);
@@ -154,7 +155,7 @@ static DNNReturnType get_input_tf(void *model, DNNData *input, const char *input
     TF_DeleteStatus(status);
 
     // currently only NHWC is supported
-    av_assert0(dims[0] == 1);
+    av_assert0(dims[0] == 1 || dims[0] == -1);
     input->height = dims[1];
     input->width = dims[2];
     input->channels = dims[3];
@@ -195,6 +196,36 @@ static DNNReturnType get_output_tf(void *model, const char *input_name, int inpu
     return ret;
 }
 
+#define SPACE_CHARS " \t\r\n"
+static int hex_to_data(uint8_t *data, const char *p)
+{
+    int c, len, v;
+
+    len = 0;
+    v   = 1;
+    for (;;) {
+        p += strspn(p, SPACE_CHARS);
+        if (*p == '\0')
+            break;
+        c = av_toupper((unsigned char) *p++);
+        if (c >= '0' && c <= '9')
+            c = c - '0';
+        else if (c >= 'A' && c <= 'F')
+            c = c - 'A' + 10;
+        else
+            break;
+        v = (v << 4) | c;
+        if (v & 0x100) {
+            if (data) {
+                data[len] = v;
+            }
+            len++;
+            v = 1;
+        }
+    }
+    return len;
+}
+
 static DNNReturnType load_tf_model(TFModel *tf_model, const char *model_filename)
 {
     TFContext *ctx = &tf_model->ctx;
@@ -219,14 +250,17 @@ static DNNReturnType load_tf_model(TFModel *tf_model, const char *model_filename
             return DNN_ERROR;
         }
         config = tf_model->ctx.options.sess_config + 2;
-        sess_config_length = ff_hex_to_data(NULL, config);
+        sess_config_length = hex_to_data(NULL, config);
 
         sess_config = av_mallocz(sess_config_length + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!sess_config) {
             av_log(ctx, AV_LOG_ERROR, "failed to allocate memory\n");
             return DNN_ERROR;
         }
-        ff_hex_to_data(sess_config, config);
+        if (hex_to_data(sess_config, config) < 0) {
+            av_log(ctx, AV_LOG_ERROR, "failed to convert hex to data\n");
+            return DNN_ERROR;
+        }
     }
 
     graph_def = read_graph(model_filename);
@@ -706,7 +740,7 @@ static DNNReturnType execute_model_tf(const DNNModel *model, const char *input_n
     TF_Output *tf_outputs;
     TFModel *tf_model = model->model;
     TFContext *ctx = &tf_model->ctx;
-    DNNData input, output;
+    DNNData input, *outputs;
     TF_Tensor **output_tensors;
     TF_Output tf_input;
     TF_Tensor *input_tensor;
@@ -729,20 +763,22 @@ static DNNReturnType execute_model_tf(const DNNModel *model, const char *input_n
     }
     input.data = (float *)TF_TensorData(input_tensor);
 
-    if (do_ioproc) {
-        if (tf_model->model->frame_pre_proc != NULL) {
-            tf_model->model->frame_pre_proc(in_frame, &input, tf_model->model->filter_ctx);
-        } else {
-            ff_proc_from_frame_to_dnn(in_frame, &input, tf_model->model->func_type, ctx);
+    switch (tf_model->model->func_type) {
+    case DFT_PROCESS_FRAME:
+        if (do_ioproc) {
+            if (tf_model->model->frame_pre_proc != NULL) {
+                tf_model->model->frame_pre_proc(in_frame, &input, tf_model->model->filter_ctx);
+            } else {
+                ff_proc_from_frame_to_dnn(in_frame, &input, ctx);
+            }
         }
-    }
-
-    if (nb_output != 1) {
-        // currently, the filter does not need multiple outputs,
-        // so we just pending the support until we really need it.
-        TF_DeleteTensor(input_tensor);
-        avpriv_report_missing_feature(ctx, "multiple outputs");
-        return DNN_ERROR;
+        break;
+    case DFT_ANALYTICS_DETECT:
+        ff_frame_to_dnn_detect(in_frame, &input, ctx);
+        break;
+    default:
+        avpriv_report_missing_feature(ctx, "model function type %d", tf_model->model->func_type);
+        break;
     }
 
     tf_outputs = av_malloc_array(nb_output, sizeof(*tf_outputs));
@@ -784,23 +820,56 @@ static DNNReturnType execute_model_tf(const DNNModel *model, const char *input_n
         return DNN_ERROR;
     }
 
-    for (uint32_t i = 0; i < nb_output; ++i) {
-        output.height = TF_Dim(output_tensors[i], 1);
-        output.width = TF_Dim(output_tensors[i], 2);
-        output.channels = TF_Dim(output_tensors[i], 3);
-        output.data = TF_TensorData(output_tensors[i]);
-        output.dt = TF_TensorType(output_tensors[i]);
+    outputs = av_malloc_array(nb_output, sizeof(*outputs));
+    if (!outputs) {
+        TF_DeleteTensor(input_tensor);
+        av_freep(&tf_outputs);
+        av_freep(&output_tensors);
+        av_log(ctx, AV_LOG_ERROR, "Failed to allocate memory for *outputs\n"); \
+        return DNN_ERROR;
+    }
 
+    for (uint32_t i = 0; i < nb_output; ++i) {
+        outputs[i].height = TF_Dim(output_tensors[i], 1);
+        outputs[i].width = TF_Dim(output_tensors[i], 2);
+        outputs[i].channels = TF_Dim(output_tensors[i], 3);
+        outputs[i].data = TF_TensorData(output_tensors[i]);
+        outputs[i].dt = TF_TensorType(output_tensors[i]);
+    }
+    switch (model->func_type) {
+    case DFT_PROCESS_FRAME:
+        //it only support 1 output if it's frame in & frame out
         if (do_ioproc) {
             if (tf_model->model->frame_post_proc != NULL) {
-                tf_model->model->frame_post_proc(out_frame, &output, tf_model->model->filter_ctx);
+                tf_model->model->frame_post_proc(out_frame, outputs, tf_model->model->filter_ctx);
             } else {
-                ff_proc_from_dnn_to_frame(out_frame, &output, ctx);
+                ff_proc_from_dnn_to_frame(out_frame, outputs, ctx);
             }
         } else {
-            out_frame->width = output.width;
-            out_frame->height = output.height;
+            out_frame->width = outputs[0].width;
+            out_frame->height = outputs[0].height;
         }
+        break;
+    case DFT_ANALYTICS_DETECT:
+        if (!model->detect_post_proc) {
+            av_log(ctx, AV_LOG_ERROR, "Detect filter needs provide post proc\n");
+            return DNN_ERROR;
+        }
+        model->detect_post_proc(out_frame, outputs, nb_output, model->filter_ctx);
+        break;
+    default:
+        for (uint32_t i = 0; i < nb_output; ++i) {
+            if (output_tensors[i]) {
+                TF_DeleteTensor(output_tensors[i]);
+            }
+        }
+        TF_DeleteTensor(input_tensor);
+        av_freep(&output_tensors);
+        av_freep(&tf_outputs);
+        av_freep(&outputs);
+
+        av_log(ctx, AV_LOG_ERROR, "Tensorflow backend does not support this kind of dnn filter now\n");
+        return DNN_ERROR;
     }
 
     for (uint32_t i = 0; i < nb_output; ++i) {
@@ -811,6 +880,7 @@ static DNNReturnType execute_model_tf(const DNNModel *model, const char *input_n
     TF_DeleteTensor(input_tensor);
     av_freep(&output_tensors);
     av_freep(&tf_outputs);
+    av_freep(&outputs);
     return DNN_SUCCESS;
 }
 
