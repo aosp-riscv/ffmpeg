@@ -654,6 +654,14 @@ IGNORED_INCLUDE_FILES = [
     os.path.join('libavcodec', 'sinewin_fixed_tables.h'),
 ]
 
+# These files must never be included, and to enforce it, they must also not
+# be present in the checkout.
+MUST_BE_MISSING_INCLUDE_FILES = [
+    # This is referenced both ways.
+    os.path.join('macos_kperf.h'),
+    os.path.join('libavcodec', 'macos_kperf.h'),
+]
+
 # Known licenses that are acceptable for static linking
 # DO NOT ADD TO THIS LIST without first confirming with lawyers that the
 # licenses are okay to add.
@@ -758,6 +766,8 @@ def GetIncludedSources(file_path, source_dir, include_set, scan_only=False):
     # Else, we couldn't find it :(.
     elif include_file_path in IGNORED_INCLUDE_FILES:
       continue
+    elif include_file_path in MUST_BE_MISSING_INCLUDE_FILES:
+      continue
     else:
       exit('Failed to find file ' + include_file_path)
 
@@ -768,6 +778,11 @@ def GetIncludedSources(file_path, source_dir, include_set, scan_only=False):
       ignored = True
       print(f'Found {include_file_path} in IGNORED_INCLUDE_FILES. '
              'Consider updating the list to remove this file.')
+
+    # Also make sure that it's not in our MUST_BE_MISSING list, since it's not
+    # missing anymore.
+    if include_file_path in MUST_BE_MISSING_INCLUDE_FILES:
+      exit('Found file ' + include_file_path + ' that should be missing!')
 
     GetIncludedSources(resolved_include_path, source_dir, include_set,
                        scan_only=ignored)
