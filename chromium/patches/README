@@ -4,6 +4,11 @@
 
 
 ------------------------------------------------------------------
+
+Affects:
+    libavcodec/h263dec.c
+
+------------------------------------------------------------------
 commit 35a9efdd9ee40dff4a5e45f0039328cd893c1264
 Author: Dale Curtis <dalecurtis@chromium.org>
 Date:   Fri Feb 3 16:12:21 2012 -0800
@@ -54,7 +59,6 @@ Date:   Fri Feb 3 16:12:21 2012 -0800
     TEST=ffmpeg_regression_tests
 
 Affects:
-    libavcodec/h263dec.c
     libavcodec/h264_cabac.c
     libavcodec/h264_cavlc.c
     libavcodec/h264_parser.c
@@ -1020,4 +1024,56 @@ Date:   Wed Jul 7 17:36:34 2021 -0700
 
 Affects:
     libavcodec/jpeglsenc.c
+
+------------------------------------------------------------------
+commit 95aab0fd83619408995720ce53d7a74790580220
+Author: liberato@chromium.org <liberato@chromium.org>
+Date:   Wed Jul 7 19:01:22 2021 -0700
+
+    Add av_stream_get_first_dts for Chromium
+
+Affects:
+    libavformat/avformat.h
+    libavformat/utils.c
+
+------------------------------------------------------------------
+commit bc096b909c50e184cc1712f4fbcb6e59e5832515
+Merge: cfc3c73207 b9176dbfb7
+Author: liberato@chromium.org <liberato@chromium.org>
+Date:   Fri Jul 30 14:53:37 2021 -0700
+
+    Merge remote-tracking branch 'upstream/master' into sushi-2021-07-30-14-52-49
+
+     Conflicts:
+            libavcodec/h263dec.c -- UNCHECKED_BITSTREAM_READER
+
+Affects:
+    libavcodec/h263dec.c
+
+------------------------------------------------------------------
+commit 628f5287515a4359354922763fabb93f86c00324
+Author: liberato@chromium.org <liberato@chromium.org>
+Date:   Fri Jul 30 14:56:01 2021 -0700
+
+    Delete GPL'd macos_kperf.* before merge with chromium
+
+Affects:
+    libavutil/macos_kperf.c
+    libavutil/macos_kperf.h
+
+------------------------------------------------------------------
+commit d67214044b87280d6537d60717de1f20ba2d0741
+Author: liberato@chromium.org <liberato@chromium.org>
+Date:   Fri Jul 30 18:40:25 2021 -0700
+
+    Un-fix ogg vorbis to match previous behavior.
+
+    Rather than change chrome's longstanding behavior as part of the m94
+    roll, undo (comment out) the small patch that causes it.  We can
+    revisit this behavior change separately from the roll.
+
+    Bug: 1234960
+
+Affects:
+    libavformat/oggparsevorbis.c
 

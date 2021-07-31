@@ -6,7 +6,7 @@
 #define CONFIG_THIS_YEAR 2021
 #define FFMPEG_DATADIR "/usr/local/share/ffmpeg"
 #define AVCONV_DATADIR "/usr/local/share/ffmpeg"
-#define CC_IDENT "clang version 13.0.0 (https://github.com/llvm/llvm-project/ f814cd7406aa13e082fdf6fe8296178a77735a5a)"
+#define CC_IDENT "clang version 13.0.0 (https://github.com/llvm/llvm-project/ f98ed74f6910f8b09e77497aeb30c860c433610d)"
 #define OS_NAME darwin
 #define av_restrict restrict
 #define EXTERN_PREFIX "_"
@@ -386,6 +386,7 @@
 #define HAVE_PERL 1
 #define HAVE_POD2MAN 1
 #define HAVE_TEXI2HTML 0
+#define HAVE_XMLLINT 1
 #define HAVE_ZLIB_GZIP 0
 #define CONFIG_DOC 0
 #define CONFIG_HTMLPAGES 0
@@ -591,6 +592,7 @@
 #define CONFIG_FONTCONFIG 0
 #define CONFIG_LARGE_TESTS 1
 #define CONFIG_LINUX_PERF 0
+#define CONFIG_MACOS_KPERF 0
 #define CONFIG_MEMORY_POISONING 0
 #define CONFIG_NEON_CLOBBER_TEST 0
 #define CONFIG_OSSFUZZ 0
@@ -1689,6 +1691,7 @@
 #define CONFIG_AFIR_FILTER 0
 #define CONFIG_AFORMAT_FILTER 0
 #define CONFIG_AFREQSHIFT_FILTER 0
+#define CONFIG_AFWTDN_FILTER 0
 #define CONFIG_AGATE_FILTER 0
 #define CONFIG_AIIR_FILTER 0
 #define CONFIG_AINTEGRAL_FILTER 0
