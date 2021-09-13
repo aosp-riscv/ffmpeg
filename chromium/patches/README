@@ -1051,29 +1051,19 @@ Affects:
     libavcodec/h263dec.c
 
 ------------------------------------------------------------------
-commit 628f5287515a4359354922763fabb93f86c00324
+commit b4d520ca6786368a829b38147364f22096f284fa
 Author: liberato@chromium.org <liberato@chromium.org>
-Date:   Fri Jul 30 14:56:01 2021 -0700
+Date:   Fri Jul 30 18:46:38 2021 -0700
 
-    Delete GPL'd macos_kperf.* before merge with chromium
+    M94 FFmpeg roll.
 
-Affects:
-    libavutil/macos_kperf.c
-    libavutil/macos_kperf.h
-
-------------------------------------------------------------------
-commit d67214044b87280d6537d60717de1f20ba2d0741
-Author: liberato@chromium.org <liberato@chromium.org>
-Date:   Fri Jul 30 18:40:25 2021 -0700
-
-    Un-fix ogg vorbis to match previous behavior.
-
-    Rather than change chrome's longstanding behavior as part of the m94
-    roll, undo (comment out) the small patch that causes it.  We can
-    revisit this behavior change separately from the roll.
-
-    Bug: 1234960
+    Bug: 1227259
+    Change-Id: I53e21333100fc603d814806a9f6f807fede2adb6
+    Reviewed-on: https://chromium-review.googlesource.com/c/chromium/third_party/ffmpeg/+/3063817
+    Reviewed-by: Ted Meyer <tmathmeyer@chromium.org>
 
 Affects:
     libavformat/oggparsevorbis.c
+    libavutil/macos_kperf.c
+    libavutil/macos_kperf.h
 
