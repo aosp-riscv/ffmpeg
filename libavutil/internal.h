@@ -203,6 +203,8 @@ void avpriv_request_sample(void *avc,
 
 #ifdef DEBUG
 #   define ff_dlog(ctx, ...) av_log(ctx, AV_LOG_DEBUG, __VA_ARGS__)
+#elif defined(CHROMIUM_NO_LOGGING)
+#   define ff_dlog(ctx, ...) do { } while(0) // Prevent a [-Wempty-body] error.
 #else
 #   define ff_dlog(ctx, ...) do { if (0) av_log(ctx, AV_LOG_DEBUG, __VA_ARGS__); } while (0)
 #endif

@@ -1067,3 +1067,12 @@ Affects:
     libavutil/macos_kperf.c
     libavutil/macos_kperf.h
 
+------------------------------------------------------------------
+commit 2037a504c2b047433fe111b30563d6cd54bad225
+Author: Thomas Guilbert <tguilbert@chromium.org>
+Date:   Wed Sep 15 15:32:35 2021 -0700
+
+    Fix macro expansion error
+
+Affects:
+    ibavutil/internal.h
