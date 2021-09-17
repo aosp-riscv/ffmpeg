@@ -1068,11 +1068,24 @@ Affects:
     libavutil/macos_kperf.h
 
 ------------------------------------------------------------------
-commit 2037a504c2b047433fe111b30563d6cd54bad225
+commit 47273666537556c923cc4f4a03d9d42666931876
 Author: Thomas Guilbert <tguilbert@chromium.org>
-Date:   Wed Sep 15 15:32:35 2021 -0700
+Date:   Wed Sep 15 15:44:40 2021 -0700
 
     Fix macro expansion error
 
+    This CL fixes an issue that results from the CHROMIUM_NO_LOGGING macro.
+    When it is defined, av_log(...) expands to nothing, which causes this
+    expansion:
+            ff_dlog(ctx, ...) -->  do { if (0) av_log(...)  ; } while (0)
+
+    to cause a -Wempty-statement error, due to the empty `if (0) ;`.
+
+    Bug: 1249257
+    Change-Id: I0011ae8e50c8931ac64517fa604775a9838ac8a1
+    Reviewed-on: https://chromium-review.googlesource.com/c/chromium/third_party/ffmpeg/+/3163777
+    Reviewed-by: John Rummell <jrummell@chromium.org>
+
 Affects:
-    ibavutil/internal.h
+    libavutil/internal.h
+
