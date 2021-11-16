@@ -396,7 +396,7 @@ def TryRealDepsRoll(robo_configuration):
   robo_configuration.chdir_to_chrome_src()
   # TODO: do we need to check if there's already a 'git cl issue'?
   # TODO: --bug would be nice.
-  shell.output_or_error(["roll_dep.py", "--roll-to", sha1, "--log-limit", "10", "third_party/ffmpeg"])
+  shell.output_or_error(["roll_dep.py", "--roll-to", sha1, "--log-limit", "10", "src/third_party/ffmpeg"])
   shell.output_or_error(["git", "cl", "upload"])
   shell.output_or_error(["git", "cl", "try"])
   shell.log("Started DEPS roll!")
