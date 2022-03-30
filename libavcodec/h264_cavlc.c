@@ -27,7 +27,6 @@
 
 #define CABAC(h) 0
 
-#include "internal.h"
 #include "h264dec.h"
 #include "h264_mvpred.h"
 #include "h264data.h"
