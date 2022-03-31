@@ -28,8 +28,7 @@
 #include <stdlib.h>
 
 #define CACHED_BITSTREAM_READER !ARCH_X86_32
-// Chromium: Don't include this.
-// #define UNCHECKED_BITSTREAM_READER 1
+// #define UNCHECKED_BITSTREAM_READER 1  // Chromium: Required for security.
 
 #include "libavutil/intreadwrite.h"
 #include "libavutil/pixdesc.h"

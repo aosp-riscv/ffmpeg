@@ -34,6 +34,7 @@
 #include "config.h"
 
 #define CACHED_BITSTREAM_READER HAVE_FAST_64BIT
+// #define UNCHECKED_BITSTREAM_READER 1  // Chromium: Required for security.
 #include "avcodec.h"
 #include "get_bits.h"
 #include "huffman.h"

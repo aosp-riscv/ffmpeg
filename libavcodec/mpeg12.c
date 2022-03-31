@@ -25,6 +25,8 @@
  * MPEG-1/2 decoder
  */
 
+// #define UNCHECKED_BITSTREAM_READER 1  // Chromium: Required for security.
+
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/thread.h"

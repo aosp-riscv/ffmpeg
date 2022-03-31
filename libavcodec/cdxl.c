@@ -25,6 +25,8 @@
  * @author Paul B Mahol
  */
 
+// #define UNCHECKED_BITSTREAM_READER 1  // Chromium: Required for security.
+
 #include "libavutil/intreadwrite.h"
 #include "libavutil/imgutils.h"
 #include "avcodec.h"

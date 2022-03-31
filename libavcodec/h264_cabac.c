@@ -26,6 +26,7 @@
  */
 
 #define CABAC(h) 1
+// #define UNCHECKED_BITSTREAM_READER 1  // Chromium: Required for security.
 #define INT_BIT (CHAR_BIT * sizeof(int))
 
 #include "libavutil/attributes.h"
