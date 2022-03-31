@@ -634,6 +634,7 @@ def WriteGn(fd, disjoint_sets):
 IGNORED_INCLUDE_FILES = [
     # Chromium generated files
     'config.h',
+    'config_components.h',
     os.path.join('libavcodec', 'bsf_list.c'),
     os.path.join('libavcodec', 'codec_list.c'),
     os.path.join('libavcodec', 'parser_list.c'),
