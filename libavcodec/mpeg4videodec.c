@@ -20,7 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#define UNCHECKED_BITSTREAM_READER 1
+// #define UNCHECKED_BITSTREAM_READER 1  // Chromium: Required for security.
 
 #include "config_components.h"
 

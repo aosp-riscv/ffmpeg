@@ -25,7 +25,7 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
-#define UNCHECKED_BITSTREAM_READER 1
+// #define UNCHECKED_BITSTREAM_READER 1  // Chromium: Required for security.
 
 #include "config_components.h"
 
