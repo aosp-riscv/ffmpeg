@@ -879,3 +879,17 @@ Affects:
     libavcodec/h264dec.c
     libavcodec/mpeg4videodec.c
 
+------------------------------------------------------------------
+commit 4cfd75d794ea5917d7526d6a993f305591ce52d8
+Author: Dale Curtis <dalecurtis@chromium.org>
+Date:   Fri Apr 1 16:01:02 2022 -0700
+
+    Redisable av_sscanf since it's little used and takes ~8kb.
+
+    I removed this patch in the M102 roll thinking we didn't need it
+    anymore, but the Android binary size bot complains at the size
+    increase.
+
+Affects:
+    libavutil/avstring.h
+
