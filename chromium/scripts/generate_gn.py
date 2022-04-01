@@ -118,6 +118,7 @@ def CleanObjectFiles(object_files):
       'libavcodec/x86/dnxhd_mmx.o',
       'libavformat/sdp.o',
       'libavutil/adler32.o',
+      'libavutil/avsscanf.o',
       'libavutil/audio_fifo.o',
       'libavutil/blowfish.o',
       'libavutil/cast5.o',

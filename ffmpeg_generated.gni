@@ -145,7 +145,6 @@ if ((is_android && current_cpu == "arm" && arm_use_neon) || (is_android && curre
     "libavutil/autorename_libavutil_imgutils.c",
     "libavutil/autorename_libavutil_tx_float.c",
     "libavutil/autorename_libavutil_utils.c",
-    "libavutil/avsscanf.c",
     "libavutil/avstring.c",
     "libavutil/base64.c",
     "libavutil/bprint.c",
