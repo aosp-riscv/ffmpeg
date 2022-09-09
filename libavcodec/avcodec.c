@@ -283,14 +283,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (ret < 0)
         goto free_and_end;
 
-    if (CONFIG_FRAME_THREAD_ENCODER && av_codec_is_encoder(avctx->codec)) {
-        ret = ff_frame_thread_encoder_init(avctx);
-        if (ret < 0)
-            goto free_and_end;
-    }
-
-    if (HAVE_THREADS
-        && !(avci->frame_thread_encoder && (avctx->active_thread_type&FF_THREAD_FRAME))) {
+    if (HAVE_THREADS && !avci->frame_thread_encoder) {
         /* Frame-threaded decoders call FFCodec.init for their child contexts. */
         lock_avcodec(codec2);
         ret = ff_thread_init(avctx);
@@ -388,6 +381,8 @@ void avcodec_flush_buffers(AVCodecContext *avctx)
         }
         if (avci->in_frame)
             av_frame_unref(avci->in_frame);
+        if (avci->recon_frame)
+            av_frame_unref(avci->recon_frame);
     } else {
         av_packet_unref(avci->last_pkt_props);
         while (av_fifo_read(avci->pkt_props, avci->last_pkt_props, 1) >= 0)
@@ -468,6 +463,7 @@ av_cold int avcodec_close(AVCodecContext *avctx)
 
         av_packet_free(&avci->in_pkt);
         av_frame_free(&avci->in_frame);
+        av_frame_free(&avci->recon_frame);
 
         av_buffer_unref(&avci->pool);
 
@@ -478,6 +474,10 @@ av_cold int avcodec_close(AVCodecContext *avctx)
         av_bsf_free(&avci->bsf);
 
         av_channel_layout_uninit(&avci->initial_ch_layout);
+
+#if CONFIG_LCMS2
+        ff_icc_context_uninit(&avci->icc);
+#endif
 
         av_freep(&avctx->internal);
     }
@@ -713,4 +713,13 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
 int avcodec_is_open(AVCodecContext *s)
 {
     return !!s->internal;
+}
+
+int attribute_align_arg avcodec_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+{
+    av_frame_unref(frame);
+
+    if (av_codec_is_decoder(avctx->codec))
+        return ff_decode_receive_frame(avctx, frame);
+    return ff_encode_receive_frame(avctx, frame);
 }
