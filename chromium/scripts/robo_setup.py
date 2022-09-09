@@ -210,7 +210,7 @@ def EnsureChromiumNasm(robo_configuration):
 
   # Copy it
   shell.log("Copying Chromium's nasm to llvm bin directory")
-  if shutil.copy(chromium_nasm_path, llvm_nasm_path):
+  if llvm_nasm_path != shutil.copy(chromium_nasm_path, llvm_nasm_path):
     raise Exception(
         "Could not copy %s into %s" % (chromium_nasm_path, llvm_nasm_path))
 
