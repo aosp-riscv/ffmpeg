@@ -43,8 +43,10 @@
 #include "mpeg12.h"
 #include "mpeg12data.h"
 #include "mpeg12enc.h"
+#include "mpeg12vlc.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
+#include "mpegvideodata.h"
 #include "mpegvideoenc.h"
 #include "profiles.h"
 
@@ -81,6 +83,12 @@ typedef struct MPEG12EncContext {
     int a53_cc;
     int seq_disp_ext;
     int video_format;
+#define VIDEO_FORMAT_COMPONENT   0
+#define VIDEO_FORMAT_PAL         1
+#define VIDEO_FORMAT_NTSC        2
+#define VIDEO_FORMAT_SECAM       3
+#define VIDEO_FORMAT_MAC         4
+#define VIDEO_FORMAT_UNSPECIFIED 5
 } MPEG12EncContext;
 
 #define A53_MAX_CC_COUNT 0x1f
@@ -1132,7 +1140,8 @@ av_cold void ff_mpeg1_encode_init(MpegEncContext *s)
 {
     static AVOnce init_static_once = AV_ONCE_INIT;
 
-    ff_mpeg12_common_init(s);
+    s->y_dc_scale_table =
+    s->c_dc_scale_table = ff_mpeg2_dc_scale_table[s->intra_dc_precision];
 
     s->me.mv_penalty = mv_penalty;
     s->fcode_tab     = fcode_tab;
