@@ -491,10 +491,13 @@ def BuildFFmpeg(target_os, target_arch, host_os, host_arch, parallel_jobs,
   # isn't actually used, so it's safe to set HAVE_SYSCTL to 0. Linux is also
   # removing <sys/sysctl.h> soon, so this is needed to silence a deprecation
   # #warning which will be converted to an error via -Werror.
+  # There is also no prctl.h
   if target_os in ['linux', 'linux-noasm']:
     pre_make_rewrites += [
         (r'(#define HAVE_SYSCTL [01])',
-         r'#define HAVE_SYSCTL 0 /* \1 -- forced to 0 for Fuchsia */')
+         r'#define HAVE_SYSCTL 0 /* \1 -- forced to 0 for Fuchsia */'),
+        (r'(#define HAVE_PRCTL [01])',
+         r'#define HAVE_PRCTL 0 /* \1 -- forced to 0 for Fuchsia */')
     ]
 
   # Turn off bcrypt, since we don't have it on Windows builders, but it does
