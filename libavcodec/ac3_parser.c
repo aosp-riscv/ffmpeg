@@ -273,4 +273,10 @@ int av_ac3_parse_header(const uint8_t *buf, size_t size,
 {
     return AVERROR(ENOSYS);
 }
+
+/* Chrome vvvv stub for aac_ac3_parser.c */
+int ff_ac3_find_syncword(const uint8_t *buf, int buf_size) {
+    return AVERROR(ENOSYS);
+}
+/* Chrome ^^^^ stub for aac_ac3_parser.c */
 #endif
