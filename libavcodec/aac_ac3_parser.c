@@ -29,8 +29,6 @@
 #include "ac3_parser_internal.h"
 #include "adts_header.h"
 
-#if CONFIG_AC3_PARSER
-
 int ff_aac_ac3_parse(AVCodecParserContext *s1,
                      AVCodecContext *avctx,
                      const uint8_t **poutbuf, int *poutbuf_size,
@@ -168,13 +166,3 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     return i;
 }
-/* Chromium vvvv stub out ff_aac_ac3_parse() */
-#else
-int ff_aac_ac3_parse(AVCodecParserContext *s1,
-                     AVCodecContext *avctx,
-                     const uint8_t **poutbuf, int *poutbuf_size,
-                     const uint8_t *buf, int buf_size) {
-  return AVERROR(ENOSYS);
-}
-/* Chromium ^^^^ stub out ff_aac_ac3_parse() */
-#endif
