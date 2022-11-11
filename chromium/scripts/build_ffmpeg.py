@@ -1016,12 +1016,6 @@ def ConfigureAndBuild(target_arch, target_os, host_os, host_arch, parallel_jobs,
       '--enable-decoder=mpeg4',
       '--enable-parser=h263,mpeg4video',
       '--enable-demuxer=avi',
-      # Enable playing Android 3gp files.
-      '--enable-demuxer=amr',
-      '--enable-decoder=amrnb,amrwb',
-      # Wav files for playing phone messages.
-      '--enable-decoder=gsm_ms',
-      '--enable-parser=gsm',
   ])
 
   configure_flags['ChromeAndroid'].extend([
