@@ -452,8 +452,8 @@ av_cold int ff_tx_init_subtx(AVTXContext *s, enum AVTXType type,
     /* Array of all compiled codelet lists. Order is irrelevant. */
     const FFTXCodelet * const * const codelet_list[] = {
         ff_tx_codelet_list_float_c,
-        ff_tx_codelet_list_double_c,
-        ff_tx_codelet_list_int32_c,
+        // ff_tx_codelet_list_double_c, // Chromium: save on binary size
+        // ff_tx_codelet_list_int32_c,  // Chromium: save on binary size
         ff_tx_null_list,
 #if HAVE_X86ASM
         ff_tx_codelet_list_float_x86,

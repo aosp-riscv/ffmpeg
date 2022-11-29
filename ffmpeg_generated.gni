@@ -202,8 +202,6 @@ if ((is_android && current_cpu == "arm" && arm_use_neon) || (is_android && curre
     "libavutil/timecode.c",
     "libavutil/twofish.c",
     "libavutil/tx.c",
-    "libavutil/tx_double.c",
-    "libavutil/tx_int32.c",
     "libavutil/uuid.c",
     "libavutil/video_enc_params.c",
   ]
