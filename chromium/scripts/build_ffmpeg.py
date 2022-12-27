@@ -38,7 +38,7 @@ BRANDINGS = [
 ]
 
 ARCH_MAP = {
-    'android': ['ia32', 'x64', 'arm-neon', 'arm64'],
+    'android': ['ia32', 'x64', 'arm-neon', 'arm64', 'riscv64'],
     'linux': [
         'ia32', 'x64', 'noasm-x64', 'arm', 'arm-neon', 'arm64'
     ],
@@ -142,6 +142,8 @@ def DetermineHostOsAndArch():
     host_arch = 'mips64el'
   elif platform.machine().startswith('arm'):
     host_arch = 'arm'
+  elif platform.machine() == 'riscv64':
+    host_arch = 'riscv64'
   else:
     return None
 
@@ -260,6 +262,10 @@ def SetupAndroidToolchain(target_arch):
   elif target_arch == 'mips64el': # Unsupported beginning in M90
     toolchain_level = api64_level
     toolchain_bin_prefix = 'mips64el-linux-android'
+  elif target_arch == 'riscv64':
+    toolchain_level = api64_level
+    toolchain_level = "29"
+    toolchain_bin_prefix =  'riscv64-linux-android'
 
   clang_toolchain_dir = NDK_ROOT_DIR + '/toolchains/llvm/prebuilt/linux-x86_64/'
 
@@ -893,6 +899,11 @@ def ConfigureAndBuild(target_arch, target_os, host_os, host_arch, parallel_jobs,
             '--extra-cflags=--target=mips64el-linux-gnuabi64',
             '--extra-ldflags=--target=mips64el-linux-gnuabi64',
         ])
+    elif target_arch == 'riscv64':
+      configure_flags['Common'].extend([
+        '--arch=riscv64',
+        '--extra-cflags=-march=rv64ifd',
+      ])
     else:
       print(
           'Error: Unknown target arch %r for target OS %r!' % (target_arch,
@@ -918,7 +929,7 @@ def ConfigureAndBuild(target_arch, target_os, host_os, host_arch, parallel_jobs,
     # typically be the system one, so explicitly configure use of Clang's
     # ld.lld, to ensure that things like cross-compilation and LTO work.
     # This does not work for ia32 and is always used on mac.
-    if target_arch != 'ia32' and target_os != 'mac':
+    if target_arch != 'ia32' and target_arch != 'riscv64' and target_os != 'mac':
       configure_flags['Common'].append('--extra-ldflags=-fuse-ld=lld')
 
   # Should be run on Mac, unless we're cross-compiling on Linux.
