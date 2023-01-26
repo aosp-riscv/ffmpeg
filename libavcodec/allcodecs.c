@@ -628,6 +628,7 @@ extern const FFCodec ff_roq_dpcm_decoder;
 extern const FFCodec ff_sdx2_dpcm_decoder;
 extern const FFCodec ff_sol_dpcm_decoder;
 extern const FFCodec ff_xan_dpcm_decoder;
+extern const FFCodec ff_wady_dpcm_decoder;
 
 /* ADPCM codecs */
 extern const FFCodec ff_adpcm_4xm_decoder;
@@ -828,6 +829,7 @@ extern const FFCodec ff_libaom_av1_decoder;
 /* hwaccel hooks only, so prefer external decoders */
 extern const FFCodec ff_av1_decoder;
 extern const FFCodec ff_av1_cuvid_decoder;
+extern const FFCodec ff_av1_mediacodec_decoder;
 extern const FFCodec ff_av1_nvenc_encoder;
 extern const FFCodec ff_av1_qsv_decoder;
 extern const FFCodec ff_av1_qsv_encoder;
