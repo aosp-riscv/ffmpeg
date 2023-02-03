@@ -620,6 +620,7 @@ extern const FFCodec ff_pcm_vidc_encoder;
 extern const FFCodec ff_pcm_vidc_decoder;
 
 /* DPCM codecs */
+extern const FFCodec ff_cbd2_dpcm_decoder;
 extern const FFCodec ff_derf_dpcm_decoder;
 extern const FFCodec ff_gremlin_dpcm_decoder;
 extern const FFCodec ff_interplay_dpcm_decoder;
@@ -694,6 +695,7 @@ extern const FFCodec ff_adpcm_thp_decoder;
 extern const FFCodec ff_adpcm_thp_le_decoder;
 extern const FFCodec ff_adpcm_vima_decoder;
 extern const FFCodec ff_adpcm_xa_decoder;
+extern const FFCodec ff_adpcm_xmd_decoder;
 extern const FFCodec ff_adpcm_yamaha_encoder;
 extern const FFCodec ff_adpcm_yamaha_decoder;
 extern const FFCodec ff_adpcm_zork_decoder;
@@ -833,6 +835,7 @@ extern const FFCodec ff_av1_mediacodec_decoder;
 extern const FFCodec ff_av1_nvenc_encoder;
 extern const FFCodec ff_av1_qsv_decoder;
 extern const FFCodec ff_av1_qsv_encoder;
+extern const FFCodec ff_av1_amf_encoder;
 extern const FFCodec ff_libopenh264_encoder;
 extern const FFCodec ff_libopenh264_decoder;
 extern const FFCodec ff_h264_amf_encoder;
@@ -880,6 +883,12 @@ extern const FFCodec ff_vp9_mediacodec_decoder;
 extern const FFCodec ff_vp9_qsv_decoder;
 extern const FFCodec ff_vp9_vaapi_encoder;
 extern const FFCodec ff_vp9_qsv_encoder;
+
+// null codecs
+extern const FFCodec ff_vnull_decoder;
+extern const FFCodec ff_vnull_encoder;
+extern const FFCodec ff_anull_decoder;
+extern const FFCodec ff_anull_encoder;
 
 // The iterate API is not usable with ossfuzz due to the excessive size of binaries created
 #if CONFIG_OSSFUZZ
