@@ -20,6 +20,16 @@ for os in android linux linux-noasm mac win; do
         [ -e $FROM ] && cp -v $FROM $TO
       done
     done
+    # Since we cannot cross-compile for ios, we just duplicate the mac config
+    # for this platform.
+    if [ "$os" = "mac" ]; then
+       FROM="chromium/config/$target/$os/arm64"
+       if [ -d $FROM ]; then
+         TO="chromium/config/$target/ios/arm64"
+         if [ ! -d "$(dirname $TO)" ]; then mkdir -p $(dirname $TO); fi
+         cp -v -r $FROM $TO
+       fi
+    fi
   done
 done
 
