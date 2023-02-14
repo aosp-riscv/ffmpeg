@@ -463,7 +463,15 @@ static int setup_frame(AVCodecContext *ctx, const AVFrame *frame,
 
 #if FF_API_REORDERED_OPAQUE
 FF_DISABLE_DEPRECATION_WARNINGS
+    /* Chromium https://crbug.com/1415548
+     * This comment is just to cause a conflict if this usage of
+     * `reordered_opaque` ever changes.
+     */
     opaque->reordered_opaque = frame->reordered_opaque;
+    /* Chromium https://crbug.com/1415548
+     * This comment is just to cause a conflict if this usage of
+     * `reordered_opaque` ever changes.
+     */
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     opaque->duration         = frame->duration;
@@ -620,7 +628,15 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
         out_opaque < &x4->reordered_opaque[x4->nb_reordered_opaque]) {
 #if FF_API_REORDERED_OPAQUE
 FF_DISABLE_DEPRECATION_WARNINGS
+    /* Chromium https://crbug.com/1415548
+     * This comment is just to cause a conflict if this usage of
+     * `reordered_opaque` ever changes.
+     */
         ctx->reordered_opaque = out_opaque->reordered_opaque;
+    /* Chromium https://crbug.com/1415548
+     * This comment is just to cause a conflict if this usage of
+     * `reordered_opaque` ever changes.
+     */
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
         wallclock = out_opaque->wallclock;

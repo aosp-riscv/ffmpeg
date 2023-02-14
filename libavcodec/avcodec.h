@@ -1389,7 +1389,9 @@ typedef struct AVCodecContext {
      *
      * @deprecated Use AV_CODEC_FLAG_COPY_OPAQUE instead
      */
+    /* Chromium vvv https://crbug.com/1415548
     attribute_deprecated
+     * Chromium ^^^ https://crbug.com/1415548 */
     int64_t reordered_opaque;
 #endif
 
