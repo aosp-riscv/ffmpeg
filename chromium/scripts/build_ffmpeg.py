@@ -38,7 +38,7 @@ BRANDINGS = [
 ]
 
 ARCH_MAP = {
-    'android': ['ia32', 'x64', 'arm-neon', 'arm64'],
+    'android': ['ia32', 'x64', 'arm-neon', 'arm64', 'riscv64'],
     'linux': [
         'ia32', 'x64', 'noasm-x64', 'arm', 'arm-neon', 'arm64'
     ],
@@ -206,7 +206,7 @@ class AndroidApiLevels:
 
     # Remove the temporary GN build output folder
     print('removing temp dir ' + tmp_dir)
-    shutil.rmtree(tmp_dir, ignore_errors=False)
+    #shutil.rmtree(tmp_dir, ignore_errors=False)
 
     api64_match = re.search(r'android64_ndk_api_level\s*=\s*(\d{2})',
                             config_output)
@@ -260,6 +260,12 @@ def SetupAndroidToolchain(target_arch):
   elif target_arch == 'mips64el': # Unsupported beginning in M90
     toolchain_level = api64_level
     toolchain_bin_prefix = 'mips64el-linux-android'
+  elif target_arch == 'riscv64':
+    # FIXME: AndroidApiLevels can not get correct level
+    # because it only set target_os without default_min_sdk_version
+    # So we just set it forcely here!
+    toolchain_level = '10000'
+    toolchain_bin_prefix =  'riscv64-linux-android'
 
   clang_toolchain_dir = NDK_ROOT_DIR + '/toolchains/llvm/prebuilt/linux-x86_64/'
 
@@ -911,6 +917,10 @@ def ConfigureAndBuild(target_arch, target_os, host_os, host_arch, parallel_jobs,
             '--extra-cflags=--target=mips64el-linux-gnuabi64',
             '--extra-ldflags=--target=mips64el-linux-gnuabi64',
         ])
+    elif target_arch == 'riscv64':
+      configure_flags['Common'].extend([
+        '--arch=riscv64',
+      ])
     else:
       print(
           'Error: Unknown target arch %r for target OS %r!' % (target_arch,
