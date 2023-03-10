@@ -206,7 +206,7 @@ class AndroidApiLevels:
 
     # Remove the temporary GN build output folder
     print('removing temp dir ' + tmp_dir)
-    #shutil.rmtree(tmp_dir, ignore_errors=False)
+    shutil.rmtree(tmp_dir, ignore_errors=False)
 
     api64_match = re.search(r'android64_ndk_api_level\s*=\s*(\d{2})',
                             config_output)
@@ -261,7 +261,7 @@ def SetupAndroidToolchain(target_arch):
     toolchain_level = api64_level
     toolchain_bin_prefix = 'mips64el-linux-android'
   elif target_arch == 'riscv64':
-    # FIXME: AndroidApiLevels can not get correct level
+    # FIXME(riscv64-android): AndroidApiLevels can not get correct level
     # because it only set target_os without default_min_sdk_version
     # So we just set it forcely here!
     toolchain_level = '10000'
