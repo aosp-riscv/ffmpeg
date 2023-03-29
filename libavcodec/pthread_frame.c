@@ -362,13 +362,20 @@ static int update_context_from_user(AVCodecContext *dst, AVCodecContext *src)
     dst->skip_idct        = src->skip_idct;
     dst->skip_frame       = src->skip_frame;
 
+    dst->frame_num        = src->frame_num;
+#if FF_API_AVCTX_FRAME_NUMBER
+FF_DISABLE_DEPRECATION_WARNINGS
     dst->frame_number     = src->frame_number;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 #if FF_API_REORDERED_OPAQUE
 FF_DISABLE_DEPRECATION_WARNINGS
     dst->reordered_opaque = src->reordered_opaque;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
+#if FF_API_SLICE_OFFSET
+FF_DISABLE_DEPRECATION_WARNINGS
     if (src->slice_count && src->slice_offset) {
         if (dst->slice_count < src->slice_count) {
             int err = av_reallocp_array(&dst->slice_offset, src->slice_count,
@@ -380,6 +387,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
                src->slice_count * sizeof(*dst->slice_offset));
     }
     dst->slice_count = src->slice_count;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     av_packet_unref(dst->internal->last_pkt_props);
     err = av_packet_copy_props(dst->internal->last_pkt_props, src->internal->last_pkt_props);
@@ -681,7 +690,11 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
                 av_freep(&ctx->priv_data);
             }
 
+#if FF_API_SLICE_OFFSET
+FF_DISABLE_DEPRECATION_WARNINGS
             av_freep(&ctx->slice_offset);
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
             av_buffer_unref(&ctx->internal->pool);
             av_packet_free(&ctx->internal->last_pkt_props);
@@ -898,10 +911,8 @@ static int thread_get_buffer_internal(AVCodecContext *avctx, AVFrame *f, int fla
         return ff_get_buffer(avctx, f, flags);
 
     p = avctx->internal->thread_ctx;
-FF_DISABLE_DEPRECATION_WARNINGS
     if (atomic_load(&p->state) != STATE_SETTING_UP &&
         ffcodec(avctx->codec)->update_thread_context) {
-FF_ENABLE_DEPRECATION_WARNINGS
         av_log(avctx, AV_LOG_ERROR, "get_buffer() cannot be called after ff_thread_finish_setup()\n");
         return -1;
     }
