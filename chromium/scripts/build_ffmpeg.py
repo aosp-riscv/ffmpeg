@@ -261,10 +261,7 @@ def SetupAndroidToolchain(target_arch):
     toolchain_level = api64_level
     toolchain_bin_prefix = 'mips64el-linux-android'
   elif target_arch == 'riscv64':
-    # FIXME(riscv64-android): AndroidApiLevels can not get correct level
-    # because it only set target_os without default_min_sdk_version
-    # So we just set it forcely here!
-    toolchain_level = '10000'
+    toolchain_level = api64_level
     toolchain_bin_prefix =  'riscv64-linux-android'
 
   clang_toolchain_dir = NDK_ROOT_DIR + '/toolchains/llvm/prebuilt/linux-x86_64/'
